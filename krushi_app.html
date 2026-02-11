@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Krushisanvad | Smart Soil Testing</title>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
+  
+  <style>
+    /* CSS Styles */
+    :root { --primary: #22c55e; --dark: #064e3b; --bg: #f0fdf4; }
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Poppins', sans-serif; }
+    body { background: var(--bg); color: var(--dark); padding-bottom: 50px; }
+
+    header { background: white; padding: 15px 40px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 4px 15px rgba(0,0,0,0.05); position: sticky; top: 0; z-index: 1000; }
+    .logo { font-size: 22px; font-weight: 700; color: var(--dark); }
+    .logo span { color: var(--primary); }
+    
+    .container { max-width: 900px; margin: 40px auto; padding: 0 20px; }
+    
+    .panel { background: white; border-radius: 20px; padding: 30px; box-shadow: 0 4px 20px rgba(0,0,0,0.05); margin-bottom: 30px; }
+    h2 { margin-bottom: 20px; color: var(--dark); }
+    
+    input[type="file"] { width: 100%; padding: 15px; border: 2px dashed var(--primary); border-radius: 10px; cursor: pointer; background: #f0fdf4; }
+    
+    .btn { background: var(--primary); color: white; border: none; padding: 15px 30px; border-radius: 10px; font-size: 16px; font-weight: 600; cursor: pointer; width: 100%; margin-top: 15px; transition: 0.2s; }
+    .btn:hover { background: var(--dark); }
+
+    #loadingView, #resultView { display: none; }
+    
+    .spinner { width: 40px; height: 40px; border: 4px solid #ddd; border-top: 4px solid var(--primary); border-radius: 50%; animation: spin 1s linear infinite; margin: 20px auto; }
+    @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+    .result-card { background: white; padding: 25px; border-radius: 15px; margin-bottom: 20px; border-left: 5px solid var(--primary); box-shadow: 0 4px 10px rgba(0,0,0,0.03); }
+    .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; font-size: 13px; margin-top: 10px; }
+    .grid div { background: #f8fafc; padding: 8px; border-radius: 5px; text-align: center; }
+    
+    .crop-title { font-size: 32px; color: var(--primary); font-weight: 700; margin: 10px 0; text-transform: capitalize; }
+    
+    ul { padding-left: 20px; color: #555; font-size: 14px; line-height: 1.6; margin-top: 10px; }
+    iframe { width: 100%; height: 250px; border: none; border-radius: 10px; margin-top: 15px; background: #fff; }
+  </style>
+</head>
+
+<body>
+
+<header>
+  <div class="logo">🌿 Krushi<span>Sanvad</span></div>
+  <button onclick="location.reload()" style="background:none; border:none; cursor:pointer; font-weight:600; color:var(--dark);">Reset</button>
+</header>
+
+<div class="container">
+
+  <div class="panel">
+    <h2>1. Upload Soil Health Card</h2>
+    <div>
+      <label>Select PDF Report:</label>
+      <input type="file" id="pdfFile" accept=".pdf">
+      <button type="button" onclick="runAnalysis()" class="btn">✨ Run AI Analysis</button>
+    </div>
+  </div>
+
+  <div id="loadingView" style="text-align: center; padding: 40px;">
+    <div class="spinner"></div>
+    <h3>Analyzing Soil Parameters...</h3>
+    <p style="color:#666">Extracting NPK data and running predictive models...</p>
+  </div>
+
+  <div id="resultView">
+    
+    <div class="result-card" style="border-color: #10b981;">
+      <h3 style="color:#059669">📊 Extracted Soil Data</h3>
+      <div class="grid">
+        <div><strong>N:</strong> <span id="val_N">-</span></div>
+        <div><strong>P:</strong> <span id="val_P">-</span></div>
+        <div><strong>K:</strong> <span id="val_K">-</span></div>
+        <div><strong>pH:</strong> <span id="val_ph">-</span></div>
+        <div><strong>EC:</strong> <span id="val_ec">-</span></div>
+        <div><strong>OC:</strong> <span id="val_oc">-</span></div>
+      </div>
+    </div>
+
+    <div class="result-card" style="border-color: #22c55e;">
+      <h3 style="color:#15803d">🌱 Recommended Crop</h3>
+      <div class="crop-title" id="cropName">-</div>
+      <div style="background:#eefdf5; padding:5px 10px; border-radius:5px; display:inline-block; font-weight:bold; color:#15803d; margin-bottom:15px;">
+        Confidence: <span id="cropConf">-</span>%
+      </div>
+      
+      <h4>Why this crop? (AI Logic)</h4>
+      <ul id="cropReasons"></ul>
+
+      <h4 style="margin-top:20px;">AI Decision Plot (SHAP):</h4>
+      <iframe id="shapFrame"></iframe>
+    </div>
+
+    <div class="result-card" style="border-color: #f59e0b;">
+      <h3 style="color:#b45309">💊 Recommended Fertilizer</h3>
+      <h2 id="fertName" style="color:#f59e0b; margin-top:10px;">-</h2>
+      <p style="margin-bottom:10px;">Confidence: <span id="fertConf">-</span>%</p>
+      
+      <h4>Why this Fertilizer?</h4>
+      <ul id="fertReasons">
+        </ul>
+    </div>
+
+  </div>
+
+</div>
+
+<script>
+  const BACKEND_URL = "http://127.0.0.1:5000";
+
+  async function runAnalysis() {
+    const fileInput = document.getElementById('pdfFile');
+    const file = fileInput.files[0];
+
+    if (!file) {
+      alert("Please select a Soil Health Card PDF first.");
+      return;
+    }
+
+    document.getElementById('loadingView').style.display = 'block';
+    document.getElementById('resultView').style.display = 'none';
+
+    const formData = new FormData();
+    formData.append('file', file);
+
+    try {
+      const response = await fetch(`${BACKEND_URL}/analyze`, {
+        method: 'POST',
+        body: formData
+      });
+
+      if (!response.ok) throw new Error("Server Error: " + response.statusText);
+
+      const data = await response.json();
+      updateDashboard(data);
+
+    } catch (error) {
+      alert("Error: " + error.message);
+      document.getElementById('loadingView').style.display = 'none';
+    }
+  }
+
+  function updateDashboard(data) {
+    // Soil Data
+    document.getElementById('val_N').innerText = (data.soil_data.N || 0);
+    document.getElementById('val_P').innerText = (data.soil_data.P || 0);
+    document.getElementById('val_K').innerText = (data.soil_data.K || 0);
+    document.getElementById('val_ph').innerText = (data.soil_data.ph || 0);
+    document.getElementById('val_ec').innerText = (data.soil_data.EC || 0);
+    document.getElementById('val_oc').innerText = (data.soil_data.OC || 0);
+
+    // Crop Data
+    document.getElementById('cropName').innerText = data.crop.prediction;
+    document.getElementById('cropConf').innerText = data.crop.confidence;
+    
+    // Crop Reasons
+    const list = document.getElementById('cropReasons');
+    list.innerHTML = "";
+    data.crop.reasons.forEach(r => {
+      const li = document.createElement('li');
+      li.innerText = r;
+      list.appendChild(li);
+    });
+
+    // Fertilizer Data
+    document.getElementById('fertName').innerText = data.fertilizer.prediction;
+    document.getElementById('fertConf').innerText = data.fertilizer.confidence;
+
+    // Fertilizer Reasons (NEW)
+    const fertList = document.getElementById('fertReasons');
+    fertList.innerHTML = "";
+    if (data.fertilizer.reasons) {
+        data.fertilizer.reasons.forEach(r => {
+            const li = document.createElement('li');
+            li.innerText = r;
+            fertList.appendChild(li);
+        });
+    }
+
+    // SHAP Plot
+    document.getElementById('shapFrame').src = `${BACKEND_URL}${data.crop.plot}?t=${Date.now()}`;
+
+    document.getElementById('loadingView').style.display = 'none';
+    document.getElementById('resultView').style.display = 'block';
+    document.getElementById('resultView').scrollIntoView({ behavior: 'smooth' });
+  }
+</script>
+
+</body>
+</html>

@@ -1,0 +1,539 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Krushisanvad | Smart Soil Testing & AI Crop Recommendations</title>
+  <meta name="description" content="Krushisanvad: AI-based crop recommendations and soil testing.">
+  <link rel="stylesheet" href="style.css"> 
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  
+  <style>
+    /* Inline CSS for specific result elements */
+    #loadingView, #resultView { display: none; }
+    
+    .spinner { width: 40px; height: 40px; border: 4px solid #ddd; border-top: 4px solid #22c55e; border-radius: 50%; animation: spin 1s linear infinite; margin: 20px auto; }
+    @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+    .result-card { background: white; padding: 25px; border-radius: 15px; margin-bottom: 20px; border-left: 5px solid #22c55e; box-shadow: 0 4px 10px rgba(0,0,0,0.03); }
+    .crop-title { font-size: 32px; color: #22c55e; font-weight: 700; margin: 10px 0; text-transform: capitalize; }
+    
+    /* Bullet points styling for explanations */
+    ul { padding-left: 20px; color: #555; font-size: 14px; line-height: 1.6; margin-top: 10px; }
+    li { margin-bottom: 8px; }
+    
+    iframe { width: 100%; height: 250px; border: none; border-radius: 10px; margin-top: 15px; background: #fff; }
+
+    /* --- DASHBOARD UI STYLES --- */
+.dashboard-container { max-width: 1200px; margin: 0 auto; padding: 0 20px; }
+
+/* The Grid for the 4 Top Cards */
+.results-grid { 
+    display: grid; 
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); 
+    gap: 20px; 
+    margin-bottom: 30px; 
+}
+
+.stat-card { 
+    background: white; 
+    padding: 25px; 
+    border-radius: 16px; 
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); 
+    border-top: 5px solid #22c55e; /* Default color */
+    transition: transform 0.2s; 
+    text-align: center;
+}
+.stat-card:hover { transform: translateY(-3px); }
+
+/* Soil Grid inside the first card */
+.soil-grid { 
+    display: grid; 
+    grid-template-columns: 1fr 1fr; 
+    gap: 8px; 
+    margin-top: 10px; 
+}
+.soil-item { 
+    background: #f1f5f9; 
+    padding: 6px; 
+    border-radius: 6px; 
+    font-size: 12px; 
+    color: #64748b;
+}
+.soil-item span { 
+    display: block; 
+    font-weight: 700; 
+    color: #334155; 
+    font-size: 14px; 
+}
+
+/* Wide Analysis Panel */
+.analysis-panel { 
+    background: white; 
+    border-radius: 20px; 
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1); 
+    overflow: hidden; 
+    border: 1px solid #e2e8f0; 
+}
+.panel-header { 
+    background: #f0fdf4; 
+    padding: 20px 30px; 
+    border-bottom: 1px solid #dcfce7; 
+}
+.panel-body { 
+    padding: 30px; 
+    display: grid; 
+    grid-template-columns: 1fr 1fr; /* Side-by-side layout */
+    gap: 40px; 
+}
+
+/* Mobile Responsive */
+@media (max-width: 768px) { 
+    .panel-body { grid-template-columns: 1fr; } 
+}
+  </style>
+</head>
+
+<body>
+
+<div id="preloader">
+  <div class="spinner"></div>
+  <p style="margin-top:15px; font-weight:600; color:#064e3b">Loading Krushisanvad...</p>
+</div>
+
+<header>
+  <div class="logo">🌿 Krushi<span>Sanvad</span></div>
+  <nav class="desktop-nav">
+    <a href="#hero">Home</a>
+    <a href="#Services">Services</a>
+    <a href="#Analysis">AI Lab</a>
+    <a href="#Contact">Expert Support</a>
+  </nav>
+  <div class="nav-actions">
+    <button class="btn btn-primary" onclick="openBookingModal()">Book Soil Test</button>
+  </div>
+</header>
+
+<section class="hero" id="hero">
+  <div>
+    <h1>Smart Farming for <br><span>Better Yields</span></h1>
+    <p>Empowering farmers with AI-driven soil analysis. Upload your Soil Health Card to get instant crop and fertilizer recommendations using Explainable AI (XAI).</p>
+    <div class="hero-buttons" style="display:flex; gap:15px; flex-wrap:wrap; justify-content:center;">
+      <button class="btn btn-primary" onclick="document.getElementById('Analysis').scrollIntoView({ behavior: 'smooth' });">Analyze Soil Report</button>
+      <button class="btn btn-outline" onclick="openBookingModal()">Book Lab Test</button>
+    </div>
+  </div>
+
+  <div class="hero-card">
+    <span style="position:absolute; top:20px; right:20px; background:white; color:var(--dark); padding:5px 15px; border-radius:20px; font-weight:bold; font-size:12px; box-shadow:0 5px 15px rgba(0,0,0,0.1);">AI Powered</span>
+    <img src="https://images.unsplash.com/photo-1625246333195-78d9c38ad449?q=80&w=1000&auto=format&fit=crop" alt="Smart Farming">
+    <div style="display:flex; justify-content:space-between; margin-top:15px; color:#64748b; font-size:14px;">
+      <span><span>🌱</span> Crop Prediction</span>
+      <span><span>🔬</span> Soil Health Audit</span>
+    </div>
+  </div>
+</section>
+
+<section id="Services">
+  <div class="section-title">
+    <span class="eyebrow">Our Features</span>
+    <h2>Complete Soil Health Solutions</h2>
+    <p>From sample collection to AI-based crop planning, we handle it all.</p>
+  </div>
+
+  <div class="grid">
+    <div class="card">
+      <div class="card-icon">🚛</div>
+      <h3>Doorstep Soil Testing</h3>
+      <p>Book a slot, and our delivery partner will collect your soil sample.</p>
+      <br>
+      <button class="btn btn-outline" onclick="openBookingModal()">Book Slot</button>
+    </div>
+    
+    <div class="card">
+      <div class="card-icon">🤖</div>
+      <h3>ML Crop Recommendation</h3>
+      <p>Upload your report to our AI engine to get precise crop and fertilizer suggestions.</p>
+      <br>
+      <button class="btn btn-outline" onclick="document.getElementById('Analysis').scrollIntoView()">Try AI Tool</button>
+    </div>
+
+    <div class="card">
+      <div class="card-icon">💬</div>
+      <h3>Krushi Chatbot</h3>
+      <p>Ask our NLP-powered chatbot about alternative crops, diseases, or farming tips.</p>
+      <br>
+      <button class="btn btn-outline" onclick="toggleChat()">Chat Now</button>
+    </div>
+  </div>
+</section>
+
+<section class="customize-studio" id="Analysis">
+  <div class="section-title">
+    <span class="eyebrow">AI LAB</span>
+    <h2>Intelligent Crop Doctor</h2>
+    <p>Upload your Soil Health Card (PDF) to generate an analysis.</p>
+  </div>
+
+  <div class="studio-container">
+    
+    <div class="control-panel">
+      <div class="control-group">
+        <div class="step-badge">01</div>
+        <h3>Upload Soil Health Card</h3>
+        
+        <label style="font-size:12px; font-weight:bold; color:#064e3b;">📄 PDF Report</label>
+        <input type="file" id="pdfFile" accept=".pdf" style="width:100%; margin-top:8px; margin-bottom:20px; font-size:13px; padding:10px; border:2px dashed var(--primary); border-radius:8px; cursor:pointer;">
+        
+        <p style="font-size:12px; color:#666; margin:15px 0 10px; font-weight:600;">System Auto-Detects:</p>
+        <div style="font-size:11px; color:#64748b; display:grid; grid-template-columns: 1fr 1fr; gap:5px;">
+          <span>• Nitrogen (N)</span> <span>• Phosphorus (P)</span>
+          <span>• Potassium (K)</span> <span>• pH Level</span>
+          <span>• Org. Carbon</span> <span>• Micro-nutrients</span>
+        </div>
+      </div>
+
+      <button type="button" onclick="runAnalysis()" class="btn btn-primary" style="width:100%; padding:16px; margin-top:10px; font-size:16px; border-radius:12px;">
+        ✨ Run AI Analysis
+      </button>
+    </div>
+
+    <div class="viewer-panel">
+      <div class="viewer-header">
+        <span style="color:#4ade80; font-weight:700; letter-spacing:1px;">● AI ENGINE READY</span>
+        <span style="font-size:12px; opacity:0.7;">MODEL: XAI-AGRI-V2</span>
+      </div>
+
+      <div id="loadingView" style="text-align:center; padding:40px;">
+        <div class="spinner"></div>
+        <h4 style="color:var(--primary); margin-top:15px;">Analyzing Soil Structure...</h4>
+        <p style="color:#666; font-size:13px;">Parsing PDF • Running Random Forest • Generating Explanations</p>
+      </div>
+
+      <div id="placeholderView" class="analysis-placeholder" style="text-align:center; padding:60px 20px; color:#999;">
+        <div style="font-size:80px; opacity:0.15; margin-bottom:20px;">🧬</div>
+        <h4 style="color:#999; margin-bottom:10px;">Ready for Analysis</h4>
+        <p style="color:#aaa; font-size:14px; margin:0;">Upload your PDF on the left to see results here.</p>
+      </div>
+      <div id="resultView">
+    
+    <div class="results-grid">
+        
+        <div class="stat-card" style="border-top-color: #0ea5e9; text-align: left;">
+            <h4 style="color:#0f172a; margin-bottom:10px; font-size:16px;">📊 Soil Health</h4>
+            <div class="soil-grid">
+                <div class="soil-item">N <span><span id="val_N">0</span></span></div>
+                <div class="soil-item">P <span><span id="val_P">0</span></span></div>
+                <div class="soil-item">K <span><span id="val_K">0</span></span></div>
+                <div class="soil-item">pH <span><span id="val_ph">0</span></span></div>
+                <div class="soil-item">EC <span><span id="val_ec">0</span></span></div>
+                <div class="soil-item">OC <span><span id="val_oc">0</span></span></div>
+            </div>
+        </div>
+
+        <div class="stat-card" style="border-top-color: #22c55e;">
+            <h4 style="color:#0f172a; margin-bottom:15px; font-size:16px;">🌱 Crop</h4>
+            <div style="font-size: 40px; margin-bottom: 5px;">🌾</div>
+            <h2 id="cropName" style="color:#15803d; text-transform: uppercase; font-size: 22px; margin: 0;">-</h2>
+            <div style="margin-top:5px; font-size: 12px; color:#166534; background:#dcfce7; display:inline-block; padding:2px 10px; border-radius:12px;">
+                Conf: <span id="cropConf">0</span>%
+            </div>
+        </div>
+
+        <div class="stat-card" style="border-top-color: #f59e0b;">
+            <h4 style="color:#0f172a; margin-bottom:15px; font-size:16px;">💊 Fertilizer</h4>
+            <div style="font-size: 40px; margin-bottom: 5px;">🧪</div>
+            <h2 id="fertName" style="color:#b45309; font-size: 22px; margin: 0;">-</h2>
+            <div style="margin-top:5px; font-size: 12px; color:#92400e; background:#fef3c7; display:inline-block; padding:2px 10px; border-radius:12px;">
+                Conf: <span id="fertConf">0</span>%
+            </div>
+        </div>
+
+        <div class="stat-card" style="border-top-color: #ef4444;">
+            <h4 style="color:#0f172a; margin-bottom:15px; font-size:16px;">⚖️ Governance</h4>
+            <div style="font-size: 40px; margin-bottom: 5px;">🌍</div>
+            <div id="govStatus" style="font-weight:bold; color:#b91c1c; font-size:16px; margin-bottom:5px;">-</div>
+            <p style="font-size:11px; color:#64748b; margin:0;">Soil & Water Audit</p>
+        </div>
+
+    </div>
+
+    <div class="analysis-panel">
+        <div class="panel-header">
+            <h3>🔍 Deep Analysis Report <span style="font-size:12px; background:white; padding:4px 10px; border-radius:10px; border:1px solid #ddd; color:#666; margin-left:10px; font-weight:normal;">XAI Powered</span></h3>
+        </div>
+        
+        <div class="panel-body">
+            
+            <div>
+                <h4 style="margin-bottom:15px; color:#334155;">🤖 Why this Crop?</h4>
+                <ul id="cropReasons" style="font-size:14px; line-height:1.6; color:#475569;"></ul>
+
+                <div class="expert-box" style="margin-top:25px; background:#fffbeb; border:1px solid #fcd34d; padding:20px; border-radius:12px;">
+                    <h4 style="margin-bottom:10px; color:#92400e; font-size:14px;">💡 Expert Strategy (Fertilizer & Eco-Safety)</h4>
+                    <ul id="fertReasons" style="font-size:13px; line-height:1.6; color:#78350f;"></ul>
+                </div>
+            </div>
+
+            <div>
+                <h4 style="margin-bottom:15px; color:#334155;">📈 Decision Logic (SHAP)</h4>
+                <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:12px; padding:10px; height:320px;">
+                    <iframe id="shapFrame" style="width:100%; height:100%; border:none;"></iframe>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+</div>
+      
+    </div>
+  </div>
+</section>
+
+<div class="modal-overlay" id="bookingModal">
+  <div class="modal">
+    <span style="position:absolute; top:20px; right:20px; cursor:pointer; font-size:20px;" onclick="closeBookingModal()">✕</span>
+    <h3>Book Soil Collection</h3>
+    <form onsubmit="event.preventDefault(); alert('Slot Booked Successfully! Our partner will contact you.'); closeBookingModal();">
+      <div class="form-group">
+        <input type="text" placeholder="Farmer Name" required>
+      </div>
+      <div class="form-group">
+        <input type="tel" placeholder="Mobile Number" required>
+      </div>
+      <div class="form-group">
+        <textarea placeholder="Farm Address / Landmark" required></textarea>
+      </div>
+      <button type="submit" class="btn btn-primary" style="width:100%;">Confirm Booking</button>
+    </form>
+  </div>
+</div>
+
+<div id="chatbot-btn" onclick="toggleChat()">💬</div>
+
+<div class="chat-window" id="chatWindow">
+  <div class="chat-header">
+    <span>Krushi Assistant</span>
+    <span style="cursor:pointer;" onclick="toggleChat()">✕</span>
+  </div>
+  <div class="chat-body" id="chatBody">
+    <div class="message bot">Hello! I am your AI farming assistant. Ask me about your soil report or recommended crops!</div>
+  </div>
+  <div class="chat-input-area">
+    <input type="text" id="chatInput" placeholder="Ask about crops..." onkeypress="if(event.key==='Enter') sendMessage()">
+    <button class="btn btn-primary" style="padding:8px 15px;" onclick="sendMessage()">➤</button>
+  </div>
+</div>
+
+<footer class="ks-footer" id="Contact">
+  <div style="text-align:center; color:#fff;">
+    <h3>Krushisanvad</h3>
+    <p>Bridging the Trust Gap in Precision Agriculture with Explainable AI</p>
+    <p style="margin-top:20px; font-size:12px; opacity:0.6;">© 2026 Krushisanvad. Developed by Team Krushisanvad.</p>
+  </div>
+</footer>
+
+<script>
+  // CONFIGURATION
+  const BACKEND_URL = "http://127.0.0.1:5000";
+
+  // PRELOADER
+  window.onload = function() {
+    document.getElementById('preloader').style.opacity = '0';
+    setTimeout(() => { document.getElementById('preloader').style.display = 'none'; }, 500);
+  };
+
+  // ANALYSIS FUNCTION
+  async function runAnalysis() {
+    const fileInput = document.getElementById('pdfFile');
+    const file = fileInput.files[0];
+
+    if (!file) {
+      alert("Please select a Soil Health Card PDF first.");
+      return;
+    }
+
+    // Show Loading
+    document.getElementById('loadingView').style.display = 'block';
+    document.getElementById('placeholderView').style.display = 'none';
+    document.getElementById('resultView').style.display = 'none';
+
+    const formData = new FormData();
+    formData.append('file', file);
+
+    try {
+      console.log("Sending request to Backend...");
+      const response = await fetch(`${BACKEND_URL}/analyze`, {
+        method: 'POST',
+        body: formData
+      });
+
+      if (!response.ok) throw new Error("Server Error: " + response.statusText);
+
+      const data = await response.json();
+      console.log("Data Received:", data);
+      
+      updateDashboard(data);
+
+    } catch (error) {
+      console.error(error);
+      alert("Error: " + error.message);
+      document.getElementById('loadingView').style.display = 'none';
+      document.getElementById('placeholderView').style.display = 'block';
+    }
+  }
+
+  // UPDATE UI FUNCTION
+  function updateDashboard(data) {
+    console.log("🔥 FULL DATA RECEIVED:", data); // Check Console for this!
+
+    // 1. Soil Data
+    document.getElementById('val_N').innerText = (data.soil_data.N || 0);
+    document.getElementById('val_P').innerText = (data.soil_data.P || 0);
+    document.getElementById('val_K').innerText = (data.soil_data.K || 0);
+    document.getElementById('val_ph').innerText = (data.soil_data.ph || 0);
+    document.getElementById('val_ec').innerText = (data.soil_data.EC || 0);
+    document.getElementById('val_oc').innerText = (data.soil_data.OC || 0);
+
+    // 2. Crop Data
+    document.getElementById('cropName').innerText = data.crop.prediction;
+    document.getElementById('cropConf').innerText = data.crop.confidence;
+    
+    const cropList = document.getElementById('cropReasons');
+    cropList.innerHTML = "";
+    data.crop.reasons.forEach(r => {
+      const li = document.createElement('li');
+      li.innerText = r;
+      cropList.appendChild(li);
+    });
+
+    // 3. Fertilizer Data
+    document.getElementById('fertName').innerText = data.fertilizer.prediction;
+    document.getElementById('fertConf').innerText = data.fertilizer.confidence;
+
+    // 4. Fertilizer Explanations
+    const fertList = document.getElementById('fertReasons');
+    fertList.innerHTML = "";
+    if (data.fertilizer.reasons && data.fertilizer.reasons.length > 0) {
+        data.fertilizer.reasons.forEach(r => {
+            const li = document.createElement('li');
+            li.innerText = r;
+            fertList.appendChild(li);
+        });
+    } else {
+        fertList.innerHTML = "<li>No specific issues found. Balanced maintenance recommended.</li>";
+    }
+
+    // 5. Governance Logic (DEBUGGED)
+    if (data.governance && data.governance.alerts) {
+        console.log("✅ Governance Data Found:", data.governance.alerts);
+        
+        const govStatus = document.getElementById('govStatus');
+        const alerts = data.governance.alerts;
+        
+        // Update Status
+        if (alerts.some(a => a.includes("⚠️"))) {
+            govStatus.innerText = "⚠️ Risks Detected";
+            govStatus.style.color = "#ef4444";
+        } else {
+            govStatus.innerText = "✅ Eco-Compliant";
+            govStatus.style.color = "#22c55e";
+        }
+
+        // Add Separator
+        const separator = document.createElement('li');
+        separator.innerHTML = "<strong>--- 🌍 Sustainability Audit ---</strong>";
+        separator.style.marginTop = "15px"; 
+        separator.style.borderTop = "1px dashed #cbd5e1";
+        separator.style.paddingTop = "10px";
+        separator.style.color = "#0f172a";
+        fertList.appendChild(separator);
+
+        // Add Alerts
+        alerts.forEach(alert => {
+            const li = document.createElement('li');
+            li.innerText = alert;
+            li.style.fontWeight = "500";
+            if(alert.includes("⚠️")) li.style.color = "#b91c1c";
+            else li.style.color = "#15803d";
+            fertList.appendChild(li);
+        });
+    } else {
+        console.error("❌ NO GOVERNANCE DATA IN RESPONSE");
+    }
+
+    // 6. SHAP Plot
+    document.getElementById('shapFrame').src = `${BACKEND_URL}${data.crop.plot}?t=${Date.now()}`;
+
+    // 7. Show View
+    document.getElementById('loadingView').style.display = 'none';
+    document.getElementById('resultView').style.display = 'block';
+    
+    setTimeout(() => {
+        document.getElementById('resultView').scrollIntoView({ behavior: 'smooth' });
+    }, 100);
+  }
+
+    
+
+  // UTILS
+  function openBookingModal() { document.getElementById('bookingModal').style.display = 'flex'; }
+  function closeBookingModal() { document.getElementById('bookingModal').style.display = 'none'; }
+
+  function toggleChat() {
+    const chat = document.getElementById('chatWindow');
+    chat.style.display = chat.style.display === 'flex' ? 'none' : 'flex';
+  }
+
+  async function sendMessage() {
+    const input = document.getElementById('chatInput');
+    const body = document.getElementById('chatBody');
+    const text = input.value.trim();
+    
+    if (text) {
+      // 1. Add User Message
+      const userMsg = document.createElement('div');
+      userMsg.className = 'message user';
+      userMsg.innerText = text;
+      body.appendChild(userMsg);
+      input.value = '';
+      body.scrollTop = body.scrollHeight;
+
+      // 2. Show "Thinking..." bubble
+      const loadingMsg = document.createElement('div');
+      loadingMsg.className = 'message bot';
+      loadingMsg.innerText = "Thinking...";
+      loadingMsg.id = "loadingBubble";
+      body.appendChild(loadingMsg);
+      body.scrollTop = body.scrollHeight;
+
+      try {
+        // 3. Send to Backend
+        const response = await fetch(`${BACKEND_URL}/chat`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ message: text })
+        });
+
+        const data = await response.json();
+
+        // 4. Update with Real Reply
+        const botMsg = document.getElementById('loadingBubble');
+        botMsg.innerHTML = marked.parse ? marked.parse(data.reply) : data.reply; // Optional markdown support if you have it, else raw text
+        botMsg.id = ""; // Remove ID
+
+      } catch (error) {
+        console.error(error);
+        document.getElementById('loadingBubble').innerText = "⚠️ Error connecting to chatbot server.";
+      }
+      
+      body.scrollTop = body.scrollHeight;
+    }
+  }
+</script>
+
+</body>
+</html>
